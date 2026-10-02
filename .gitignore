@@ -4,6 +4,8 @@
 !/README.md
 !/LICENSE
 !/NOTICE.md
+!/promo-capture.qml
+!/render_promo.py
 !/IdleContext.qml
 !/build_plugin.py
 !/build_prelock.py
@@ -64,7 +66,7 @@
 !/tests/qml/tst_policy.qml
 !/tests/transport_fixture.py
 !/assets/
-!/assets/storybook-three-chats.png
+!/assets/endless-session-demo.gif
 !/docs/
 /docs/*
 !/docs/STORYBOOK.md

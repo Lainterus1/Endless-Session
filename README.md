@@ -1,62 +1,81 @@
 # Endless Session
 
-Живая лента действующих локальных чатов Codex на заставке и экране блокировки Omarchy. Публичные сообщения, команды, изменения файлов и результаты поднимаются снизу вверх; новые события быстро сдвигают старые блоки, после чего лента медленно дрейфует. Несколько чатов получают отдельные секции. Цвета подстраиваются под текущую тему Omarchy.
+**A live Omarchy screensaver and lock-screen feed for active local Codex chats.** User-visible messages, commands, file changes, questions, and results rise through each session. New events push older cards upward; the feed then drifts gently. Multiple chats get separate lanes, and the colors follow your Omarchy theme.
 
-![Синтетическая демонстрация трёх чатов в QML Storybook](assets/storybook-three-chats.png)
+![Animated demo: one Codex chat expands to three lanes, a reply arrives, then a lock-screen preview appears](assets/endless-session-demo.gif)
 
-*Снимок сделан в Storybook на вымышленных данных. Левая панель принадлежит галерее; установленный экран показывает только ленту.*
+*A 10.5-second synthetic demo rendered with the production QML components. It reads no real chats and does not lock the desktop. Promo labels are English; installed interface labels are currently Russian.*
 
-> **Preview.** Проверена локальная сборка для Omarchy 4.0.4-1, Quickshell 0.3.1 и Qt 6.11.2 с закреплёнными SHA lock/idle. Сон и несколько физических мониторов ещё не проверены. Полный публичный контекст на блокировке виден людям рядом с компьютером.
+> **Preview:** Tested on Omarchy 4.0.4-1, Quickshell 0.3.1, Qt 6.11.2, and the local Codex CLI 0.159.2 format. The lock and password path was checked on a real desktop. Automatic idle timing, sleep/wake, and multiple physical monitors still need more use and testing. The lock screen shows full user-visible context to anyone near the display.
 
-## Быстрый старт
+## Install
 
-Установка использует один репозиторий и одну команду установщика **двух** пользовательских service-плагинов. Штатная команда omarchy plugin add URL эту пару на поддержанной версии не устанавливает.
+One repository and one installer command set up the **two** Omarchy service plugins that Endless Session needs. On the tested Omarchy version, `omarchy plugin add` cannot install this pair from one URL.
 
-    git clone https://github.com/Lainterus1/Endless-Session.git
-    cd Endless-Session
-    python3 endless_session.py install
+```bash
+git clone https://github.com/Lainterus1/Endless-Session.git
+cd Endless-Session
+python3 endless_session.py install
+```
 
-Перед изменением конфигурации установщик проверяет версию Omarchy, Quickshell и Qt, SHA исходных файлов, разблокированное состояние и отсутствие другого lock/idle-клона. Он собирает пакет, сохраняет прежние байты и права пользовательского shell.json, включает lainterus.endless-session и lainterus.endless-session-bridge, перезапускает shell и подтверждает работающую редакцию обоих сервисов и PAM. Результат команды содержит путь backup.
+Run the installer while the desktop is unlocked. Before changing your configuration, it checks the Omarchy, Quickshell, and Qt versions; pinned Omarchy source hashes; and conflicts with existing lock/idle plugins. It builds and validates both services, saves the exact bytes and permissions of `shell.json`, enables `lainterus.endless-session` and `lainterus.endless-session-bridge`, restarts the shell, and checks both running services and PAM. The command prints the backup path.
 
-Для возврата к исходному состоянию **после разблокировки**:
+To restore the previous configuration, unlock the desktop first and use that path:
 
-    python3 endless_session.py restore --backup ПУТЬ_ИЗ_ВЫВОДА_УСТАНОВКИ
+```bash
+python3 endless_session.py restore --backup /path/from/install-output
+```
 
-При несовместимых исходниках установка остановится до изменения конфигурации. Не обходите эту проверку.
+An unsupported version or changed pinned source stops the installation before it writes to your configuration. Do not bypass that check.
 
-### Переход с прежнего Codex Idle
+### Migrating from Codex Idle
 
-Для ранее установленной пары lainterus.codex-idle / lainterus.codex-idle-bridge есть отдельная команда. Перед запуском разблокируйте экран и возьмите путь к **backup этой установленной пары** из прежнего результата установки.
+If the older `lainterus.codex-idle` / `lainterus.codex-idle-bridge` pair is installed, unlock the desktop and supply **the backup path from that installation**:
 
-    python3 endless_session.py migrate --legacy-backup ПУТЬ_К_СТАРОМУ_BACKUP
+```bash
+python3 endless_session.py migrate --legacy-backup /path/to/old-backup
+```
 
-Миграция сначала проверяет старую пару и конфигурацию, восстанавливает штатные сервисы, затем устанавливает новые. Результат содержит migration_record; он нужен для возврата к прежней паре:
+Migration checks the old pair, restores the stock services, and installs Endless Session. It prints a `migration_record` path for returning to the old pair:
 
-    python3 endless_session.py restore-migration --record ПУТЬ_ИЗ_ВЫВОДА_МИГРАЦИИ
+```bash
+python3 endless_session.py restore-migration --record /path/from/migration-output
+```
 
-При сбое запись фаз остаётся в закрытом пользовательском каталоге состояния; команду возврата можно повторить. Изменения панели и других несвязанных полей переходят в новую конфигурацию; при возврате исходные байты и права восстанавливаются точно. Изменение полей управления плагинами (plugins, disabledPlugins, cloneSourceRestores) или файлов старой пары вызывает отказ до записи. Для обновления текущей версии сначала выполните restore по её backup, затем новый install; обновление поверх активной пары пока не поддерживается.
+The migration is resumable after an interruption. Unrelated panel settings are carried forward, while changes to plugin-control fields or the old plugin files cause a safe stop before writing. To update a currently installed Endless Session version, restore its backup and then run the new installer; in-place upgrades are not supported yet.
 
-## Как это работает
+## Behavior and privacy
 
-- Сканер читает локальные метаданные и журналы Codex только для действующих или ожидающих ответа пользовательских чатов. Служебный guardian исключается до чтения его журнала; завершённые исторические чаты не создают отдельные панели.
-- До блокировки заставка закрывается по активности без пароля. После перехода в защищённую блокировку действует штатный WlSessionLock и PAM Omarchy. Отрисовка ленты не принимает решение о доступе.
-- Пока чаты работают или ждут ответа, дисплей остаётся включённым. Подтверждённое завершение всех чатов позволяет штатное гашение; при потере связи ошибка остаётся видимой, а удержание снимается через пять минут.
-- Публичные тексты обрабатываются локально в памяти. Установщик не меняет настройки Codex и не отправляет содержимое чатов в сеть. Не публикуйте собственные снимки экрана без проверки текста на них.
+| State | What happens |
+| --- | --- |
+| A chat is working or waiting for your reply | Its user-visible events stay in the feed; the display remains on. |
+| All tracked chats finish | The normal display timeout can turn the screen off. |
+| A source becomes unavailable | The feed shows the loss of connection; the display hold ends after five minutes. |
 
-Источник Codex проверен для локального формата CLI 0.159.2; это не обещание совместимости с будущими версиями. Смена версий Omarchy или содержимого штатных lock/idle-файлов требует новой проверки и пакета.
+Before lock, activity dismisses the screensaver without a password. After lock, Omarchy's WlSessionLock and PAM protect the desktop; the feed does not decide who may unlock it.
 
-## Просмотр интерфейса и разработка
+The reader tracks active or reply-waiting **local** chats and excludes the internal guardian before opening its journal. Finished historical chats do not get a lane. It renders allowed user-visible events, not private model reasoning, system/developer messages, or arbitrary raw tool output. This plugin processes chat content locally in memory; its installer does not change Codex settings or send chat content to a network service. Check your own screenshots before sharing them.
 
-[QML Storybook](docs/STORYBOOK.md) показывает настоящие компоненты заставки на явно вымышленных данных:
+Compatibility is pinned to the tested source versions and hashes. A future Omarchy or Codex update may require a new compatibility check and plugin build.
 
-    qs -p storybook.qml
+## Storybook and development
 
-Применимые локальные проверки:
+[QML Storybook](docs/STORYBOOK.md) exercises the real feed components with fictional chats, states, themes, and viewport sizes:
 
-    python3 -m unittest discover -p 'test_*.py'
-    python3 check_storybook.py --out /tmp/endless-session-storybook-check
-    python3 check_native_compile.py --out /tmp/endless-session-native-check
+```bash
+qs -p storybook.qml
+```
 
-Storybook не запускает блокировку, не читает реальные чаты и не проверяет пароль. Проверки файловых транзакций идут в изолированном HOME; работу на физическом экране нужно оценивать отдельно. Исходный код установщика и точные [ограничения совместимости](lock-compatibility.json) можно проверить до установки.
+Run the relevant local checks from the repository root:
 
-Код распространяется под [MIT](LICENSE). [NOTICE](NOTICE.md) объясняет происхождение частей Omarchy, которые попадают в собранную пару.
+```bash
+python3 -m unittest discover -p 'test_*.py'
+python3 check_storybook.py --out /tmp/endless-session-storybook-check
+python3 check_native_compile.py --out /tmp/endless-session-native-check
+```
+
+Storybook and the promo never run PAM or a real system lock. Installer tests use an isolated HOME; they do not replace an on-screen check. Review the [pinned lock compatibility](lock-compatibility.json) and installer source before installing.
+
+## License
+
+Endless Session is available under the [MIT License](LICENSE). [NOTICE](NOTICE.md) records the origin and copyright notice for the Omarchy code included in the generated plugins.
