@@ -1,0 +1,8 @@
+{
+  "origin": "/usr/share/omarchy/shell/plugins/services/idle",
+  "sha256": {
+    "Service.qml": "50f5c81e2e94fab32395a5bc3cce982e30a10ab1b3f56cc58f29055951518a51",
+    "IdleModel.js": "58226a67d5fc2f33b1a23b55cb32764a8b2091cc94c4d02af1b67f369440b9b8",
+    "manifest.json": "bb8a5f55257dc49c2b7632304dad19aa12bbc7ad641828f09481909232f30a6f"
+  }
+}
